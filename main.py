@@ -3,10 +3,14 @@ import os
 import requests
 from twilio.rest import Client
 
-OWM_Endpoint = "https://api.openweathermap.org/data/2.5/forecast"
-api_key = os.environ.get("OWM_API_KEY")
-account_sid = os.environ.get("ACCOUNT_SID")
-auth_token = os.environ.get("AUTH_TOKEN")
+
+OWM_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast"
+
+api_key = os.environ["OWM_API_KEY"]
+account_sid = os.environ["ACCOUNT_SID"]
+auth_token = os.environ["AUTH_TOKEN"]
+from_number = os.environ["TWILIO_FROM_NUMBER"]
+to_number = os.environ["TWILIO_TO_NUMBER"]
 
 weather_params = {
     "lat": 23.8388,
@@ -15,22 +19,31 @@ weather_params = {
     "cnt": 4,
 }
 
-response = requests.get(OWM_Endpoint, params=weather_params)
+response = requests.get(
+    OWM_ENDPOINT,
+    params=weather_params,
+    timeout=30,
+)
 response.raise_for_status()
-
 weather_data = response.json()
 
-print(weather_data)
 will_rain = False
+
 for hour_data in weather_data["list"]:
     condition_code = hour_data["weather"][0]["id"]
-    if int(condition_code) < 700:
+
+    if condition_code < 700:
         will_rain = True
+
 if will_rain:
     client = Client(account_sid, auth_token)
+
     message = client.messages.create(
-        to="+601163571846",
-        from_="+17372212163",
+        to=to_number,
+        from_=from_number,
         body="sms_appointment_reminders",
     )
-    print(message.status)
+
+    print(f"Message status: {message.status}")
+else:
+    print("No rain expected.")
